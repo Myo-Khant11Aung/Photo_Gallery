@@ -1,0 +1,12 @@
+# Node
+node_modules/
+dist/
+
+# Go
+/backend/uploads/
+*.exe
+*.out
+
+# Misc
+.DS_Store
+.env
