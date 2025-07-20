@@ -1,5 +1,39 @@
 import { useState, useEffect } from "react";
 
+function PhotoCard({ image }) {
+  const [inputMemo, setInputMemo] = useState(image.memo || "");
+
+  function handleMemoChange(e) {
+    setInputMemo(e.target.value);
+  }
+
+  function handleMemoUpload() {
+    console.log(`Confirm memo upload ${image.id}: ${inputMemo}`);
+  }
+
+  return (
+    <div>
+      <img
+        src={`http://localhost:8080/images/${encodeURIComponent(
+          image.filename
+        )}`}
+        alt=""
+        width="200"
+      />
+      <br />
+      <input
+        type="text"
+        value={inputMemo}
+        onChange={handleMemoChange}
+        placeholder="Memo about this photo..."
+        size={30}
+      />
+      <button onClick={handleMemoUpload}>Confirm</button>
+      <p>{image.memo}</p>
+    </div>
+  );
+}
+
 function App() {
   const [images, setImages] = useState([]);
 
@@ -40,18 +74,7 @@ function App() {
         <button type="submit">Upload</button>
       </form>
       {images &&
-        images.map((image) => (
-          <div key={image.filename}>
-            <h1>{image.title}</h1>
-            <img
-              src={`http://localhost:8080/images/${encodeURIComponent(
-                image.filename
-              )}`}
-              alt={image.title}
-              width="200"
-            />
-          </div>
-        ))}
+        images.map((image) => <PhotoCard key={image.filename} image={image} />)}
     </div>
   );
 }
