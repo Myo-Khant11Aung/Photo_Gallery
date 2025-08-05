@@ -5,12 +5,14 @@ import { useState, useEffect, useCallback } from "react";
 function AlbumPage() {
   const { date } = useParams();
   const [images, setImages] = useState([]);
-
+  const token = localStorage.getItem("token");
   const refreshImages = useCallback(() => {
-    fetch("http://localhost:8080/api/images")
+    fetch("http://localhost:8080/api/images", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then((res) => res.json())
       .then((data) => setImages(data.filter((img) => img.album_date === date)));
-  }, [date]);
+  }, [date, token]);
 
   useEffect(() => {
     refreshImages();

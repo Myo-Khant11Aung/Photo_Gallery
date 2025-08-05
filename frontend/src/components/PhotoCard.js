@@ -3,7 +3,7 @@ import { useState } from "react";
 function PhotoCard({ image, onMemoUpdated }) {
   const [inputMemo, setInputMemo] = useState(image.memo || "");
   const [isEditing, setIsEditing] = useState(false);
-
+  const token = localStorage.getItem("token");
   function handleEditingStatus() {
     setIsEditing(true);
   }
@@ -20,6 +20,7 @@ function PhotoCard({ image, onMemoUpdated }) {
     fetch(`http://localhost:8080/api/photo/${image.id}/memo`, {
       method: "PUT",
       headers: {
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ memo: inputMemo }),

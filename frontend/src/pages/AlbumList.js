@@ -1,12 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-
+import LogoutButton from "/Users/myokhantaung/Desktop/Photo_Gallery/frontend/src/components/LogoutButton.js";
 function UploadHandler({ onUploadSuccess }) {
   const [selectedFile, setSelectedFile] = useState([]);
   function handleFileChange(e) {
     setSelectedFile(e.target.files[0]);
   }
-
+  const token = localStorage.getItem("token");
   function handleUpload(e) {
     e.preventDefault();
 
@@ -15,6 +15,7 @@ function UploadHandler({ onUploadSuccess }) {
 
     fetch("http://localhost:8080/api/upload", {
       method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
       body: formData,
     })
       .then((res) => res.json())
@@ -29,6 +30,7 @@ function UploadHandler({ onUploadSuccess }) {
       <form onSubmit={handleUpload}>
         <input type="file" onChange={handleFileChange} />
         <button type="submit">Upload</button>
+        <LogoutButton />
       </form>
     </div>
   );
@@ -37,15 +39,18 @@ function UploadHandler({ onUploadSuccess }) {
 function App() {
   const [images, setImages] = useState([]);
   const navigate = useNavigate();
-
-  function refreshImages() {
-    fetch("http://localhost:8080/api/images")
+  const token = localStorage.getItem("token");
+  const refreshImages = useCallback(() => {
+    fetch("http://localhost:8080/api/images", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    })
       .then((res) => res.json())
       .then((data) => setImages(data));
-  }
+  }, [token]);
   useEffect(() => {
     refreshImages();
-  }, []);
+  }, [refreshImages]);
   const album = {};
   images.forEach((image) => {
     const date = image.album_date;

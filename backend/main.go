@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,14 +11,206 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
+func CheckPasswordHash(password string, hash string) bool{
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil 
+}
+
+var jwtSecret = []byte(os.Getenv("HS256_SECRET"))
 
 
+type contextKey string
+
+const userContextKey = contextKey("userID")
+const wallContextKey = contextKey("wallID")
+
+func jwtMiddleware(next http.HandlerFunc) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodOptions {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT")
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+        authHeader := r.Header.Get("Authorization")
+        if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
+            http.Error(w, "Missing or invalid token", http.StatusUnauthorized)
+            return
+        }
+
+        tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+
+        token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+            if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+                return nil, jwt.ErrSignatureInvalid
+            }
+            return jwtSecret, nil
+        })
+
+        if err != nil || !token.Valid {
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+
+        claims, ok := token.Claims.(jwt.MapClaims)
+        if !ok {
+            http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+            return
+        }
+
+        userIDFloat, ok := claims["user_id"].(float64)
+        if !ok {
+            http.Error(w, "Invalid user ID in token", http.StatusUnauthorized)
+            return
+        }
+		wallIDFloat, ok := claims["wall_id"].(float64)
+		if !ok {
+			http.Error(w, "Invalid wall ID in token", http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), userContextKey, int(userIDFloat))
+		ctx = context.WithValue(ctx, wallContextKey, int(wallIDFloat))
+		next.ServeHTTP(w, r.WithContext(ctx))
+    }
+}
+
+
+func generateJWT(userID int, wallID int) (string, error){
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": userID,
+		"wall_id": wallID,
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
+	})
+	return token.SignedString(jwtSecret)
+}
+
+func registerHandler(w http.ResponseWriter, r *http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+    w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT") 
+    if r.Method == http.MethodOptions {
+        w.WriteHeader(http.StatusOK)
+        return
+    }
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var Input struct {
+		Username string `json:"username"`
+		Email string `json:"email"`
+		Password string `json:"password_hash"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&Input)
+	if err != nil {
+		http.Error(w, "Invalid Input", http.StatusBadRequest)
+	}
+
+	hashedpassword, err := HashPassword(Input.Password)
+	if err != nil {
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+        return
+	}
+
+	ctx := context.Background()
+	pool := connectDatabase()
+	defer pool.Close()
+	_, err = pool.Exec(ctx, "INSERT INTO users (username, email, password_hash, wall_id) VALUES ($1, $2, $3, NULL)", Input.Username, Input.Email, hashedpassword)
+	if err != nil {
+        http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+	json.NewEncoder(w).Encode(map[string]string{"status": "registered"})
+
+}
+
+func loginHandler(w http.ResponseWriter, r * http.Request){
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT") 
+    if r.Method == http.MethodOptions {
+        w.WriteHeader(http.StatusOK)
+        return
+    }
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only Post Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var Input struct{
+		Email string `json:"email"`
+		Password string `json:"password_hash"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&Input)
+	if err != nil {
+		http.Error(w, "Invalid Input", http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.Background()
+	pool := connectDatabase()
+	defer pool.Close()
+
+	var storedPassword string
+	var userID int
+	var wallID sql.NullInt16
+
+	err = pool.QueryRow(ctx, "SELECT id, password_hash, wall_id FROM users WHERE email = $1", Input.Email).Scan(&userID, &storedPassword, &wallID)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
+	if !CheckPasswordHash(Input.Password, storedPassword) {
+		http.Error(w, "Invalid Password", http.StatusUnauthorized)
+		return
+	}
+if !wallID.Valid {
+	http.Error(w, "User has no wall assigned", http.StatusForbidden)
+	return
+}
+	token, err := generateJWT(userID, int(wallID.Int16))
+	if err != nil {
+		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+		return
+	}
+
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": "login successful",
+        "user_id": userID,
+		"wall_id": wallID,
+        "token": token,
+	})
+
+}
 
 func imageHandler(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Access-Control-Allow-Origin", "*") 
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization") 
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+    w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT")
+    if r.Method == http.MethodOptions {
+        w.WriteHeader(http.StatusOK)
+        return
+    }
+
 	ctx := context.Background()
 	pool := connectDatabase()
 	defer pool.Close()
@@ -55,7 +248,7 @@ func imageHandler(w http.ResponseWriter, r *http.Request){
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
+	w.WriteHeader(http.StatusOK)
 	ctx := context.Background()
 	pool := connectDatabase()
 	defer pool.Close()
@@ -87,8 +280,9 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		memo := ""
-		userID := 1
-		wallID := 1
+		userID := r.Context().Value(userContextKey).(int)
+		wallID := r.Context().Value(wallContextKey).(int)
+
 
 		sql := `
 			INSERT INTO images (filename, upload_time, memo, user_id, wall_id)
@@ -207,9 +401,11 @@ func cleanupMissingFiles() {
 
 
 func main(){
-	http.HandleFunc("/api/upload", uploadHandler)
-	http.HandleFunc("/api/images", imageHandler)
-	http.HandleFunc("/api/photo/", updateMemoHandler)
+	http.HandleFunc("/api/upload",jwtMiddleware(uploadHandler))
+	http.HandleFunc("/api/images", jwtMiddleware(imageHandler))
+	http.HandleFunc("/api/photo/", jwtMiddleware(updateMemoHandler))
+	http.HandleFunc("/api/register", registerHandler)
+	http.HandleFunc("/api/login", loginHandler)
 	http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("uploads"))))
 	// cleanupMissingFiles()
 	fmt.Println("Server is running on http://localhost:8080")
