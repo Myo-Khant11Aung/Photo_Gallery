@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import "../styles.css";
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,29 +36,41 @@ function Login() {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>Login</h2>
-      <input
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-      />
-      <button type="submit" onClick={handleSubmit}>
-        Log In
-      </button>
-      <div>
-        <Link to={"/register"}>Register?</Link>
+    <div className="auth-page">
+      <div className="auth-container">
+        <form onSubmit={handleSubmit} className="auth-form">
+          <h2>Login</h2>
+          <input
+            type="email"
+            placeholder="Email"
+            className="auth-input"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="auth-input"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <div className="button-group">
+            <button type="submit" className="auth-button">
+              Log In
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/register")}
+              className="auth-button"
+            >
+              Sign Up
+            </button>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   );
 }
 

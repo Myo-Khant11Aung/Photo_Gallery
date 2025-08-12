@@ -1,0 +1,385 @@
+/* =========================
+   THEME & GLOBAL BASE
+   ========================= */
+:root {
+  --bg-deep: #0a0f24;
+  --bg: #001f4d;
+  --surface-0: #12192f;
+  --surface-1: #151e3b;
+  --surface-2: #1a2552;
+  --text: #f0f0f0;
+  --text-dim: #b9c2d9;
+  --accent: #7d8dafff;
+  --primary-1: #007bff;
+  --primary-2: #0056b3;
+  --border: rgba(255, 255, 255, 0.08);
+  --radius-lg: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, var(--bg-deep), var(--bg)) fixed;
+  min-height: 100vh;
+}
+
+/* Subtle scrollbar (desktop) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* =========================
+   AUTH PAGES
+   ========================= */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.auth-container {
+  background: linear-gradient(to bottom, rgba(20, 20, 30, 0.95), #4d4d74f2);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+}
+.auth-form h2 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #6b7a988b;
+}
+.auth-input {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+.auth-button {
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease-in-out;
+}
+.auth-button:hover {
+  background-color: #0056b3;
+}
+.auth-form a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.button-group {
+  display: flex;
+  gap: 1rem;
+}
+.button-group .auth-button {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 1.5rem;
+    margin: 1.5rem;
+  }
+  .auth-input,
+  .auth-button {
+    font-size: 0.95rem;
+    padding: 0.65rem 0.9rem;
+  }
+}
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 1rem;
+    margin: 1rem;
+  }
+  .auth-input,
+  .auth-button {
+    font-size: 0.9rem;
+    padding: 0.6rem 0.85rem;
+  }
+  .auth-form h2 {
+    font-size: 1.3rem;
+  }
+}
+
+/* =========================
+   ALBUM PAGE (FLEX + RESPONSIVE)
+   ========================= */
+.album-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+}
+
+.album-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.album-title {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw + 0.6rem, 2rem);
+  font-weight: 700;
+}
+
+/* Toolbar (Logout sits here) */
+.album-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, var(--surface-0), #101735);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+
+/* Flex gallery */
+.album-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+
+/* Cards */
+.album-card {
+  flex: 0 1 240px; /* prefers ~240px, grows/shrinks fluidly */
+  max-width: 100%;
+  background: linear-gradient(180deg, var(--surface-1), var(--surface-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  color: var(--text);
+}
+.album-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+  border-color: rgba(125, 141, 175, 0.35);
+}
+
+.album-card-title {
+  margin: 0 0 10px;
+  color: #e6ecff;
+  font-size: 1.05rem;
+}
+
+.album-media {
+  background: #0b1433;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.album-media img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.album-meta {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+/* Small phones: bias toward 2-up */
+@media (max-width: 520px) {
+  .album-card {
+    flex-basis: 180px;
+  }
+}
+
+/* =========================
+   FLOATING UPLOAD BUTTON (bottom-right)
+   ========================= */
+.upload-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, var(--primary-1), var(--primary-2));
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, background 0.2s ease;
+  z-index: 1000;
+}
+.upload-fab:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(180deg, #3399ff, var(--primary-1));
+}
+.upload-fab:disabled {
+  background: linear-gradient(180deg, #5a5a5a, #3a3a3a);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.upload-fab svg {
+  width: 28px;
+  height: 28px;
+  fill: white;
+}
+
+/* =========================
+   ACCESSIBILITY / MOTION
+   ========================= */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+/* Card container */
+.photo-card {
+  flex: 1 1 260px; /* responsive size, prefers ~260px wide */
+  max-width: 100%;
+  background: linear-gradient(180deg, var(--surface-1), var(--surface-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.photo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+  border-color: rgba(125, 141, 175, 0.35);
+}
+
+/* Image area */
+.photo-card img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3; /* keeps consistent shape */
+  object-fit: cover;
+}
+
+/* Card body (memo + buttons) */
+.photo-card-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Memo text */
+.photo-card-body p {
+  margin: 0;
+  color: var(--text);
+}
+
+/* Memo textarea */
+.photo-card-body textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: rgba(10, 16, 36, 0.85);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.photo-card-body textarea:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(125, 141, 175, 0.25);
+}
+
+/* Buttons */
+.photo-card-body button {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface-0), var(--surface-1));
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+
+.photo-card-body button:hover {
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+
+/* Small screens: tighter layout */
+@media (max-width: 520px) {
+  .photo-card {
+    flex-basis: 180px;
+  }
+}
+
+.photo-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 56px;
+  color: var(--text);
+}
+
+.back-btn {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, var(--surface-1), var(--surface-2));
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
+}
+.back-btn:hover {
+  transform: translateY(-1px);
+}
+.back-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+}
+.lightbox-item img {
+  cursor: zoom-in;
+}

@@ -1,6 +1,12 @@
 import { useParams, useNavigate } from "react-router-dom";
 import PhotoCard from "../components/PhotoCard";
 import { useState, useEffect, useCallback } from "react";
+import "lightgallery/css/lightgallery.css";
+import "lightgallery/css/lg-zoom.css";
+import "lightgallery/css/lg-thumbnail.css";
+import LightGallery from "lightgallery/react";
+import lgZoom from "lightgallery/plugins/zoom";
+import lgThumbnail from "lightgallery/plugins/thumbnail";
 
 function AlbumPage() {
   const { date } = useParams();
@@ -20,19 +26,32 @@ function AlbumPage() {
 
   const navigate = useNavigate();
   return (
-    <div>
-      <button onClick={() => navigate(`/`)}>Back</button>
-      <h2>Album for {date}</h2>
-      <div>
-        {images &&
-          images.map((image) => (
-            <PhotoCard
-              key={image.id}
-              image={image}
-              onMemoUpdated={refreshImages}
-            />
-          ))}
+    <div className="photo-page">
+      <div className="album-toolbar">
+        <button className="back-btn" onClick={() => navigate(`/`)}>
+          ← Back
+        </button>
       </div>
+
+      <div className="album-header">
+        <h2 className="album-title">Album for {date}</h2>
+      </div>
+      <LightGallery
+        selector=".lightbox-item"
+        speed={300}
+        plugins={[lgZoom, lgThumbnail]}
+      >
+        <div className="photo-grid">
+          {images &&
+            images.map((image) => (
+              <PhotoCard
+                key={image.id}
+                image={image}
+                onMemoUpdated={refreshImages}
+              />
+            ))}
+        </div>
+      </LightGallery>
     </div>
   );
 }

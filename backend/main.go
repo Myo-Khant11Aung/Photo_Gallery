@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -246,62 +247,93 @@ func imageHandler(w http.ResponseWriter, r *http.Request){
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	// --- CORS ---
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	ctx := context.Background()
 	pool := connectDatabase()
 	defer pool.Close()
 
-	if r.Method == "POST" {
-		err := r.ParseMultipartForm(10 << 20)
+	// ~10 MB total memory buffer, rest to temp files
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "Cannot Parse Form", http.StatusBadRequest)
+		return
+	}
+
+	// Expect multiple files under the same field name "image"
+	files := r.MultipartForm.File["image"]
+	if len(files) == 0 {
+		http.Error(w, "No files provided (field: image)", http.StatusBadRequest)
+		return
+	}
+
+	userID := r.Context().Value(userContextKey).(int)
+	wallID := r.Context().Value(wallContextKey).(int)
+
+	type Saved struct {
+		Filename string `json:"filename"`
+	}
+	var saved []Saved
+
+	// Ensure uploads dir exists
+	if err := os.MkdirAll("uploads", 0755); err != nil {
+		http.Error(w, "Error ensuring uploads dir", http.StatusInternalServerError)
+		return
+	}
+
+	for _, fh := range files {
+		src, err := fh.Open()
 		if err != nil {
-			http.Error(w, "Cannot Parse Form", http.StatusBadRequest)
+			http.Error(w, "Error opening file", http.StatusBadRequest)
+			return
+		}
+		defer src.Close()
+
+		name := filepath.Base(fh.Filename)
+		tsName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), name)
+
+		dst, err := os.Create(filepath.Join("uploads", tsName))
+		if err != nil {
+			http.Error(w, "Error creating file", http.StatusInternalServerError)
 			return
 		}
 
-		file, header, err := r.FormFile("image")
-		if err != nil {
-			http.Error(w, "Error retrieving file", http.StatusBadRequest)
+		if _, err := io.Copy(dst, src); err != nil {
+			dst.Close()
+			http.Error(w, "Error copying file", http.StatusInternalServerError)
 			return
 		}
-		defer file.Close()
+		dst.Close()
 
-		dst, err := os.Create("uploads/" + header.Filename)
-		if err != nil {
-			http.Error(w, "Error Creating File", http.StatusInternalServerError)
-			return
-		}
-		defer dst.Close()
-
-		_, err = io.Copy(dst, file)
-		if err != nil {
-			http.Error(w, "Error Copying File", http.StatusInternalServerError)
-			return
-		}
-		memo := ""
-		userID := r.Context().Value(userContextKey).(int)
-		wallID := r.Context().Value(wallContextKey).(int)
-
-
-		sql := `
+		const sql = `
 			INSERT INTO images (filename, upload_time, memo, user_id, wall_id)
 			VALUES ($1, NOW(), $2, $3, $4)
 		`
-
-		_, err = pool.Exec(ctx, sql, header.Filename, memo, userID, wallID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if _, err := pool.Exec(ctx, sql, tsName, "", userID, wallID); err != nil {
+			http.Error(w, "DB insert failed", http.StatusInternalServerError)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
-			"message": "Upload Successful!",
-		})
-	} else {
-		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+		saved = append(saved, Saved{Filename: tsName})
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]any{
+		"message":  "Upload successful",
+		"count":    len(saved),
+		"files":    saved,
+	})
 }
 
 func updateMemoHandler(w http.ResponseWriter, r *http.Request) {
