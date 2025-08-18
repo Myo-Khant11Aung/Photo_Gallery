@@ -269,7 +269,7 @@ body {
 
 /* Card container */
 .photo-card {
-  flex: 1 1 260px; /* responsive size, prefers ~260px wide */
+  flex: 0 1 260px; /* responsive size, prefers ~260px wide */
   max-width: 100%;
   background: linear-gradient(180deg, var(--surface-1), var(--surface-2));
   border: 1px solid var(--border);

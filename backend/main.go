@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/MaestroError/go-libheif"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -292,39 +293,75 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, fh := range files {
-		src, err := fh.Open()
-		if err != nil {
-			http.Error(w, "Error opening file", http.StatusBadRequest)
-			return
-		}
-		defer src.Close()
+        // Open and read the upload once so we can inspect and reuse bytes
+        src, err := fh.Open()
+        if err != nil {
+            http.Error(w, "Error opening file", http.StatusBadRequest)
+            return
+        }
+        data, err := io.ReadAll(src)
+        src.Close()
+        if err != nil {
+            http.Error(w, "Error reading file", http.StatusBadRequest)
+            return
+        }
 
-		name := filepath.Base(fh.Filename)
-		tsName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), name)
+        // Detect content type (and also look at extension)
+        ct := http.DetectContentType(data)
+        ext := strings.ToLower(filepath.Ext(fh.Filename))
+        isHEIC := strings.HasPrefix(ct, "image/heic") ||
+            strings.HasPrefix(ct, "image/heif") ||
+            ext == ".heic" || ext == ".heif"
 
-		dst, err := os.Create(filepath.Join("uploads", tsName))
-		if err != nil {
-			http.Error(w, "Error creating file", http.StatusInternalServerError)
-			return
-		}
+        var storedName string
 
-		if _, err := io.Copy(dst, src); err != nil {
-			dst.Close()
-			http.Error(w, "Error copying file", http.StatusInternalServerError)
-			return
-		}
-		dst.Close()
+        if isHEIC {
+            // Convert HEIC → JPEG using libheif (needs a file path)
+            tmp, err := os.CreateTemp("", "heic-*"+ext)
+            if err != nil {
+                http.Error(w, "Temp file error", http.StatusInternalServerError)
+                return
+            }
+            tmpName := tmp.Name()
+            if _, err := tmp.Write(data); err != nil {
+                tmp.Close()
+                os.Remove(tmpName)
+                http.Error(w, "Temp write error", http.StatusInternalServerError)
+                return
+            }
+            tmp.Close()
+
+            base := strings.TrimSuffix(filepath.Base(fh.Filename), filepath.Ext(fh.Filename))
+            storedName = fmt.Sprintf("%d_%s.jpg", time.Now().UnixNano(), base)
+            outPath := filepath.Join("uploads", storedName)
+
+            if err := libheif.HeifToJpeg(tmpName, outPath, 85); err != nil {
+                os.Remove(tmpName)
+                http.Error(w, "HEIC convert failed", http.StatusInternalServerError)
+                return
+            }
+            os.Remove(tmpName)
+        } else {
+            // Save original bytes unchanged (PNG/JPEG/etc.)
+            base := filepath.Base(fh.Filename)
+            storedName = fmt.Sprintf("%d_%s", time.Now().UnixNano(), base)
+            outPath := filepath.Join("uploads", storedName)
+            if err := os.WriteFile(outPath, data, 0644); err != nil {
+                http.Error(w, "Error saving file", http.StatusInternalServerError)
+                return
+            }
+        }
 
 		const sql = `
 			INSERT INTO images (filename, upload_time, memo, user_id, wall_id)
 			VALUES ($1, NOW(), $2, $3, $4)
 		`
-		if _, err := pool.Exec(ctx, sql, tsName, "", userID, wallID); err != nil {
+		if _, err := pool.Exec(ctx, sql, storedName, "", userID, wallID); err != nil {
 			http.Error(w, "DB insert failed", http.StatusInternalServerError)
 			return
 		}
 
-		saved = append(saved, Saved{Filename: tsName})
+		saved = append(saved, Saved{Filename: storedName})
 	}
 
 	w.Header().Set("Content-Type", "application/json")
