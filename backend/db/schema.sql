@@ -10,6 +10,18 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: albums_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.albums_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -19,45 +31,10 @@ SET default_table_access_method = heap;
 --
 
 CREATE TABLE public.albums (
-    id integer NOT NULL,
+    id integer DEFAULT nextval('public.albums_id_seq'::regclass) NOT NULL,
     album_date date NOT NULL,
     wall_id integer,
     memo text
-);
-
-
---
--- Name: albums_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.albums_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: albums_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.albums_id_seq OWNED BY public.albums.id;
-
-
---
--- Name: images; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.images (
-    id integer NOT NULL,
-    filename text NOT NULL,
-    upload_time timestamp without time zone DEFAULT now(),
-    memo text,
-    user_id integer,
-    wall_id integer,
-    album_date date DEFAULT CURRENT_DATE
 );
 
 
@@ -66,7 +43,6 @@ CREATE TABLE public.images (
 --
 
 CREATE SEQUENCE public.images_id_seq
-    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -75,10 +51,18 @@ CREATE SEQUENCE public.images_id_seq
 
 
 --
--- Name: images_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: images; Type: TABLE; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.images_id_seq OWNED BY public.images.id;
+CREATE TABLE public.images (
+    id integer DEFAULT nextval('public.images_id_seq'::regclass) NOT NULL,
+    filename text NOT NULL,
+    upload_time timestamp without time zone DEFAULT now(),
+    memo text,
+    user_id integer,
+    wall_id integer,
+    album_date date DEFAULT CURRENT_DATE
+);
 
 
 --
@@ -91,25 +75,10 @@ CREATE TABLE public.schema_migrations (
 
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.users (
-    id integer NOT NULL,
-    username text NOT NULL,
-    password_hash text NOT NULL,
-    created_at timestamp without time zone DEFAULT now(),
-    email text NOT NULL,
-    wall_id integer
-);
-
-
---
 -- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
 CREATE SEQUENCE public.users_id_seq
-    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -118,20 +87,16 @@ CREATE SEQUENCE public.users_id_seq
 
 
 --
--- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
-
-
---
--- Name: walls; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.walls (
-    id integer NOT NULL,
-    name text NOT NULL,
-    created_at timestamp without time zone DEFAULT now()
+CREATE TABLE public.users (
+    id integer DEFAULT nextval('public.users_id_seq'::regclass) NOT NULL,
+    username text NOT NULL,
+    email text NOT NULL,
+    password_hash text NOT NULL,
+    created_at timestamp without time zone DEFAULT now(),
+    wall_id integer
 );
 
 
@@ -140,7 +105,6 @@ CREATE TABLE public.walls (
 --
 
 CREATE SEQUENCE public.walls_id_seq
-    AS integer
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -149,38 +113,14 @@ CREATE SEQUENCE public.walls_id_seq
 
 
 --
--- Name: walls_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: walls; Type: TABLE; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.walls_id_seq OWNED BY public.walls.id;
-
-
---
--- Name: albums id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.albums ALTER COLUMN id SET DEFAULT nextval('public.albums_id_seq'::regclass);
-
-
---
--- Name: images id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.images ALTER COLUMN id SET DEFAULT nextval('public.images_id_seq'::regclass);
-
-
---
--- Name: users id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
-
-
---
--- Name: walls id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.walls ALTER COLUMN id SET DEFAULT nextval('public.walls_id_seq'::regclass);
+CREATE TABLE public.walls (
+    id integer DEFAULT nextval('public.walls_id_seq'::regclass) NOT NULL,
+    name text NOT NULL,
+    created_at timestamp without time zone DEFAULT now()
+);
 
 
 --
@@ -245,6 +185,20 @@ ALTER TABLE ONLY public.users
 
 ALTER TABLE ONLY public.walls
     ADD CONSTRAINT walls_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: idx_images_wall_date; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_images_wall_date ON public.images USING btree (wall_id, album_date);
+
+
+--
+-- Name: idx_images_wall_time; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_images_wall_time ON public.images USING btree (wall_id, upload_time DESC);
 
 
 --

@@ -1,0 +1,1 @@
+Everything regarding the website itself is done. Have to work on launching the website. The variable for the R2 bucket is already in the env. Have to change the variable in the code. This note is to remind myself to know where to pick things up when i finally return to this project. 09/14.
