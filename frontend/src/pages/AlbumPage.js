@@ -37,21 +37,28 @@ function AlbumPage() {
         <h2 className="album-title">Album for {date}</h2>
       </div>
       <LightGallery
-        selector=".lightbox-item"
-        speed={300}
+        dynamic={true}
+        dynamicEl={images.map((img) => ({
+          src: img.url,
+          thumb: img.url,
+        }))}
         plugins={[lgZoom, lgThumbnail]}
-      >
-        <div className="photo-grid">
-          {images &&
-            images.map((image) => (
-              <PhotoCard
-                key={image.id}
-                image={image}
-                onMemoUpdated={refreshImages}
-              />
-            ))}
-        </div>
-      </LightGallery>
+        speed={300}
+        onInit={(detail) => {
+          window.lightGalleryInstance = detail.instance;
+        }}
+      ></LightGallery>
+
+      <div className="photo-grid">
+        {images.map((image, index) => (
+          <PhotoCard
+            key={image.id}
+            image={image}
+            index={index}
+            onMemoUpdated={refreshImages}
+          />
+        ))}
+      </div>
     </div>
   );
 }

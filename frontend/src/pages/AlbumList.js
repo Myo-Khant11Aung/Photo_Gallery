@@ -87,7 +87,7 @@ function App() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => setImages(data));
+      .then((data) => setImages(data || []));
   }, [token]);
   useEffect(() => {
     refreshImages();
@@ -110,8 +110,24 @@ function App() {
       <div className="album-header">
         <h1 className="album-title">Photo Gallery</h1>
       </div>
-
       <div className="album-list">
+        {Object.entries(album).map(([date, img]) => (
+          <div
+            key={date}
+            className="album-card"
+            onClick={() => navigate(`/album/${date}`)}
+          >
+            <h3 className="album-card-title">{date}</h3>
+
+            <div className="album-media">
+              <img src={img[0].url} alt="" className="album-thumbnail" />
+            </div>
+
+            <p className="album-meta">{img.length} photo(s)</p>
+          </div>
+        ))}
+      </div>
+      {/* <div className="album-list">
         {Object.entries(album).map(([date, img]) => (
           <div
             key={date}
@@ -130,7 +146,7 @@ function App() {
             <p className="album-meta">{img.length} photo(s)</p>
           </div>
         ))}
-      </div>
+      </div> */}
     </div>
   );
 }

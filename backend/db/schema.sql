@@ -34,7 +34,8 @@ CREATE TABLE public.albums (
     id integer DEFAULT nextval('public.albums_id_seq'::regclass) NOT NULL,
     album_date date NOT NULL,
     wall_id integer,
-    memo text
+    memo text,
+    name text DEFAULT 'Untitled Album'::text NOT NULL
 );
 
 
@@ -61,7 +62,8 @@ CREATE TABLE public.images (
     memo text,
     user_id integer,
     wall_id integer,
-    album_date date DEFAULT CURRENT_DATE
+    album_date date DEFAULT CURRENT_DATE,
+    album_id integer
 );
 
 
@@ -124,11 +126,11 @@ CREATE TABLE public.walls (
 
 
 --
--- Name: albums albums_album_date_wall_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: albums albums_name_wall_id_key; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.albums
-    ADD CONSTRAINT albums_album_date_wall_id_key UNIQUE (album_date, wall_id);
+    ADD CONSTRAINT albums_name_wall_id_key UNIQUE (name, wall_id);
 
 
 --
@@ -210,6 +212,14 @@ ALTER TABLE ONLY public.albums
 
 
 --
+-- Name: images images_album_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.images
+    ADD CONSTRAINT images_album_id_fkey FOREIGN KEY (album_id) REFERENCES public.albums(id);
+
+
+--
 -- Name: images images_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -243,4 +253,5 @@ ALTER TABLE ONLY public.users
 --
 
 INSERT INTO public.schema_migrations (version) VALUES
-    ('20250804232817');
+    ('20250804232817'),
+    ('20251019214453');

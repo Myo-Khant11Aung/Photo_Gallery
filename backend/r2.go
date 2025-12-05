@@ -1,0 +1,55 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/joho/godotenv"
+)
+
+type R2Client struct {
+	s3     *s3.Client
+	bucket string
+}
+
+// NewR2Client creates a client you can reuse in handlers
+func NewR2Client() (*R2Client, error) {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	accountId := os.Getenv("R2_ACCOUNT_ID")
+	accessKeyId := os.Getenv("R2_ACCESS_KEY_ID")
+	secretKey := os.Getenv("R2_SECRET_ACCESS_KEY")
+	bucketName := os.Getenv("R2_BUCKET")
+
+	endpoint := fmt.Sprintf("https://%s.r2.cloudflarestorage.com", accountId)
+
+	cfg, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			accessKeyId,
+			secretKey,
+			"",
+		)),
+		config.WithRegion("auto"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.BaseEndpoint = aws.String(endpoint)
+	})
+
+	return &R2Client{
+		s3:     client,
+		bucket: bucketName,
+	}, nil
+}

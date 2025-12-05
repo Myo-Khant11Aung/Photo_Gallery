@@ -6,7 +6,7 @@ import LightGallery from "lightgallery/react";
 import lgZoom from "lightgallery/plugins/zoom";
 import lgThumbnail from "lightgallery/plugins/thumbnail";
 
-function PhotoCard({ image, onMemoUpdated }) {
+function PhotoCard({ image, onMemoUpdated, index }) {
   const [inputMemo, setInputMemo] = useState(image.memo || "");
   const [isEditing, setIsEditing] = useState(false);
   const token = localStorage.getItem("token");
@@ -38,15 +38,20 @@ function PhotoCard({ image, onMemoUpdated }) {
       })
       .catch((err) => console.error("Failed to update memo", err));
   }
-  const src = `http://localhost:8080/images/${encodeURIComponent(
-    image.filename
-  )}`;
+  const src = image.url;
 
   return (
     <div className="photo-card">
-      <a href={src} className="lightbox-item" data-lg-size="1600-1200">
+      <div
+        className="photo-card-image"
+        onClick={() => {
+          if (window.lightGalleryInstance) {
+            window.lightGalleryInstance.openGallery(index);
+          }
+        }}
+      >
         <img src={src} alt="" />
-      </a>
+      </div>
       <div className="photo-card-body">
         {isEditing ? (
           <>
