@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -240,7 +241,7 @@ func (c *R2Client) PresignURL(ctx context.Context, key string, expires time.Dura
     return out.URL, nil
 }
 
-func imageHandler(r2 *R2Client) http.HandlerFunc{
+func imageHandler(pool *pgxpool.Pool,r2 *R2Client) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request){
 		log.Println("imageHandler called")
 
@@ -255,8 +256,6 @@ func imageHandler(r2 *R2Client) http.HandlerFunc{
 
 
 	ctx := context.Background()
-	pool := connectDatabase()
-	defer pool.Close()
 	wallID := r.Context().Value(wallContextKey).(int)
 	var images []Image
 	rows, err := pool.Query(ctx, `SELECT id, filename, upload_time, memo, user_id, wall_id, album_date
@@ -330,7 +329,7 @@ func (c *R2Client) UploadToR2(ctx context.Context, key string, contentType strin
 	return err
 }
 
-func uploadHandler(r2 *R2Client) http.HandlerFunc{
+func uploadHandler(pool *pgxpool.Pool,r2 *R2Client) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request) {
 	// --- CORS ---
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -346,8 +345,6 @@ func uploadHandler(r2 *R2Client) http.HandlerFunc{
 	}
 
 	ctx := context.Background()
-	pool := connectDatabase()
-	defer pool.Close()
 
 	// ~10 MB total memory buffer, rest to temp files
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
@@ -639,9 +636,11 @@ func main(){
 		return
 	}
 
+    db := connectDatabase() // returns *pgxpool.Pool
+    defer db.Close()
 
-	http.HandleFunc("/api/upload",jwtMiddleware(uploadHandler(r2Client)))
-	http.HandleFunc("/api/images", jwtMiddleware(imageHandler(r2Client)))
+	http.HandleFunc("/api/upload",jwtMiddleware(uploadHandler(db, r2Client)))
+	http.HandleFunc("/api/images", jwtMiddleware(imageHandler(db ,r2Client)))
 	http.HandleFunc("/api/photo/", jwtMiddleware(updateMemoHandler))
 	http.HandleFunc("/api/register", registerHandler)
 	http.HandleFunc("/api/login", loginHandler)
