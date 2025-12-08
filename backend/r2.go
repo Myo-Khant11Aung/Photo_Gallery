@@ -20,10 +20,10 @@ type R2Client struct {
 
 // NewR2Client creates a client you can reuse in handlers
 func NewR2Client() (*R2Client, error) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+	if err := godotenv.Load(); err != nil {
+        // This is NORMAL in production where Railway provides env vars.
+        log.Println("No .env file found, using environment variables from the system")
+    }
 	accountId := os.Getenv("R2_ACCOUNT_ID")
 	accessKeyId := os.Getenv("R2_ACCESS_KEY_ID")
 	secretKey := os.Getenv("R2_SECRET_ACCESS_KEY")
