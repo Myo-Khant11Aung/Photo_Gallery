@@ -650,6 +650,10 @@ func main(){
 	// http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("uploads"))))
 	http.HandleFunc("/api/create_album", jwtMiddleware(createAlbumHandler))
 	// cleanupMissingFiles()
-	fmt.Println("Server is running on http://localhost:8080")
-	http.ListenAndServe(":8080", nil)
+	port := os.Getenv("PORT")
+if port == "" {
+    port = "8080"
+}
+log.Printf("Server running on :%s\n", port)
+http.ListenAndServe(":"+port, nil)
 }
