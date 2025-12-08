@@ -17,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MaestroError/go-libheif"
+	// "github.com/MaestroError/go-libheif"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/golang-jwt/jwt/v5"
@@ -302,22 +302,22 @@ func imageHandler(pool *pgxpool.Pool,r2 *R2Client) http.HandlerFunc{
 }
 
 // HEIC -> JPEG bytes via libheif (writes temp files under the hood)
-func heicToJPEGBytes(heicData []byte) ([]byte, error) {
-	in, err := os.CreateTemp("", "in-*.heic")
-	if err != nil { return nil, err }
-	defer os.Remove(in.Name())
-	if _, err := in.Write(heicData); err != nil { in.Close(); return nil, err }
-	in.Close()
-	out, err := os.CreateTemp("", "out-*.jpg")
-	if err != nil { return nil, err }
-	out.Close()
-	defer os.Remove(out.Name())
+// func heicToJPEGBytes(heicData []byte) ([]byte, error) {
+// 	in, err := os.CreateTemp("", "in-*.heic")
+// 	if err != nil { return nil, err }
+// 	defer os.Remove(in.Name())
+// 	if _, err := in.Write(heicData); err != nil { in.Close(); return nil, err }
+// 	in.Close()
+// 	out, err := os.CreateTemp("", "out-*.jpg")
+// 	if err != nil { return nil, err }
+// 	out.Close()
+// 	defer os.Remove(out.Name())
 
-	if err := libheif.HeifToJpeg(in.Name(), out.Name(), 85); err != nil {
-		return nil, err
-	}
-	return os.ReadFile(out.Name())
-}
+// 	if err := libheif.HeifToJpeg(in.Name(), out.Name(), 85); err != nil {
+// 		return nil, err
+// 	}
+// 	return os.ReadFile(out.Name())
+// }
 
 func (c *R2Client) UploadToR2(ctx context.Context, key string, contentType string, data[] byte) error {
 	_, err := c.s3.PutObject(ctx, &s3.PutObjectInput{
@@ -392,10 +392,10 @@ func uploadHandler(pool *pgxpool.Pool,r2 *R2Client) http.HandlerFunc{
 
         // Detect content type (and also look at extension)
         ct := http.DetectContentType(data)
-        ext := strings.ToLower(filepath.Ext(fh.Filename))
-        isHEIC := strings.HasPrefix(ct, "image/heic") ||
-            strings.HasPrefix(ct, "image/heif") ||
-            ext == ".heic" || ext == ".heif"
+        // ext := strings.ToLower(filepath.Ext(fh.Filename))
+        // isHEIC := strings.HasPrefix(ct, "image/heic") ||
+        //     strings.HasPrefix(ct, "image/heif") ||
+        //     ext == ".heic" || ext == ".heif"
 
         ts := time.Now().UnixNano()
 		base := filepath.Base(fh.Filename)
@@ -404,23 +404,23 @@ func uploadHandler(pool *pgxpool.Pool,r2 *R2Client) http.HandlerFunc{
 		var payload []byte
 		var contentType string
 
-		if isHEIC {
-			// Convert HEIC -> JPG bytes
-			jpgBytes, err := heicToJPEGBytes(data)
-			if err != nil {
-				http.Error(w, "HEIC convert failed: "+err.Error(), http.StatusInternalServerError)
-				return
-			}
-			// ensure .jpg extension in key
-			nameNoExt := strings.TrimSuffix(base, filepath.Ext(base))
-			key = fmt.Sprintf("walls/%d/%d_%s.jpg", wallID, ts, nameNoExt)
-			payload = jpgBytes
-			contentType = "image/jpeg"
-		} else {
+		// if isHEIC {
+		// 	// Convert HEIC -> JPG bytes
+		// 	jpgBytes, err := heicToJPEGBytes(data)
+		// 	if err != nil {
+		// 		http.Error(w, "HEIC convert failed: "+err.Error(), http.StatusInternalServerError)
+		// 		return
+		// 	}
+		// 	// ensure .jpg extension in key
+		// 	nameNoExt := strings.TrimSuffix(base, filepath.Ext(base))
+		// 	key = fmt.Sprintf("walls/%d/%d_%s.jpg", wallID, ts, nameNoExt)
+		// 	payload = jpgBytes
+		// 	contentType = "image/jpeg"
+		// } else {
 			// keep original bytes (PNG/JPG)
 			payload = data
 			contentType = ct
-		}
+		// }
 		if err := r2.UploadToR2(ctx, key, contentType, payload); err != nil {
             http.Error(w, "R2 upload failed: "+err.Error(), http.StatusInternalServerError)
             return
