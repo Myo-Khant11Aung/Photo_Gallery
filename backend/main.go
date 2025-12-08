@@ -625,10 +625,11 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main(){
-    err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+    if err := godotenv.Load(); err != nil {
+        // This is NORMAL in production where Railway provides env vars.
+        log.Println("No .env file found, using environment variables from the system")
+    }
+
 
     r2Client, err := NewR2Client()
 	if err != nil {
