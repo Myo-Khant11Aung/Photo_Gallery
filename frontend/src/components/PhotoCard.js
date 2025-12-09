@@ -6,6 +6,8 @@ import LightGallery from "lightgallery/react";
 import lgZoom from "lightgallery/plugins/zoom";
 import lgThumbnail from "lightgallery/plugins/thumbnail";
 
+const API = process.env.REACT_APP_API;
+
 function PhotoCard({ image, onMemoUpdated, index }) {
   const [inputMemo, setInputMemo] = useState(image.memo || "");
   const [isEditing, setIsEditing] = useState(false);
@@ -23,7 +25,7 @@ function PhotoCard({ image, onMemoUpdated, index }) {
   }
 
   function handleMemoUpload() {
-    fetch(`http://localhost:8080/api/photo/${image.id}/memo`, {
+    fetch(`${API}/api/photo/${image.id}/memo`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,

@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles.css";
+
+const API = process.env.REACT_APP_API;
+
 function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -10,7 +13,7 @@ function Register() {
   function handleSubmit(e) {
     e.preventDefault();
 
-    fetch("http://localhost:8080/api/register", {
+    fetch(`${API}/api/register`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

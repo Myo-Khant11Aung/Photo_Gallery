@@ -8,12 +8,14 @@ import LightGallery from "lightgallery/react";
 import lgZoom from "lightgallery/plugins/zoom";
 import lgThumbnail from "lightgallery/plugins/thumbnail";
 
+const API = process.env.REACT_APP_API;
+
 function AlbumPage() {
   const { date } = useParams();
   const [images, setImages] = useState([]);
   const token = localStorage.getItem("token");
   const refreshImages = useCallback(() => {
-    fetch("http://localhost:8080/api/images", {
+    fetch(`${API}/api/images`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())

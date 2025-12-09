@@ -1,6 +1,8 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useState, useEffect } from "react";
 
+const API = process.env.REACT_APP_API;
+
 function PrivateRoute() {
   const [checked, setChecked] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,7 +14,7 @@ function PrivateRoute() {
       setIsAuthenticated(false);
       return;
     } else {
-      fetch("http://localhost:8080/api/verifyToken", {
+      fetch(`${API}/api/verifyToken`, {
         method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       })

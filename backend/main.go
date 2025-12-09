@@ -26,6 +26,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func corsMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Access-Control-Allow-Origin", "*")
+        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+
+        if r.Method == http.MethodOptions {
+            w.WriteHeader(http.StatusNoContent)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
+
+
 func writeJSONError(w http.ResponseWriter, status int, msg string) {
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(status)
@@ -52,11 +68,11 @@ type contextKey string
 const userContextKey = contextKey("userID")
 const wallContextKey = contextKey("wallID")
 
-func jwtMiddleware(next http.HandlerFunc) http.HandlerFunc {
-    return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT")
+func jwtMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// w.Header().Set("Access-Control-Allow-Origin", "*")
+        // w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        // w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT")
 		// if r.Method == http.MethodOptions {
 		// 	w.Header().Set("Access-Control-Allow-Origin", "*")
 		// 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -108,7 +124,7 @@ func jwtMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		ctx := context.WithValue(r.Context(), userContextKey, int(userIDFloat))
 		ctx = context.WithValue(ctx, wallContextKey, int(wallIDFloat))
 		next.ServeHTTP(w, r.WithContext(ctx))
-    }
+	})
 }
 
 
@@ -122,14 +138,14 @@ func generateJWT(userID int, wallID int) (string, error){
 }
 
 func registerHandler(w http.ResponseWriter, r *http.Request){
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT") 
-    if r.Method == http.MethodOptions {
-        w.WriteHeader(http.StatusOK)
-        return
-    }
+	// w.Header().Set("Access-Control-Allow-Origin", "*")
+    // w.Header().Set("Content-Type", "application/json")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	// w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT") 
+    // if r.Method == http.MethodOptions {
+    //     w.WriteHeader(http.StatusOK)
+    //     return
+    // }
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 		return
@@ -165,14 +181,14 @@ func registerHandler(w http.ResponseWriter, r *http.Request){
 }
 
 func loginHandler(w http.ResponseWriter, r * http.Request){
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT") 
-    if r.Method == http.MethodOptions {
-        w.WriteHeader(http.StatusOK)
-        return
-    }
+	// w.Header().Set("Access-Control-Allow-Origin", "*")
+	// w.Header().Set("Content-Type", "application/json")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	// w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT") 
+    // if r.Method == http.MethodOptions {
+    //     w.WriteHeader(http.StatusOK)
+    //     return
+    // }
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only Post Allowed", http.StatusMethodNotAllowed)
 		return
@@ -245,13 +261,13 @@ func imageHandler(pool *pgxpool.Pool,r2 *R2Client) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request){
 		log.Println("imageHandler called")
 
-    w.Header().Set("Access-Control-Allow-Origin", "*")
-    w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-    w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-    if r.Method == http.MethodOptions {
-        w.WriteHeader(http.StatusOK)
-        return
-    }
+    // w.Header().Set("Access-Control-Allow-Origin", "*")
+    // w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    // w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+    // if r.Method == http.MethodOptions {
+    //     w.WriteHeader(http.StatusOK)
+    //     return
+    // }
 
 
 
@@ -332,13 +348,13 @@ func (c *R2Client) UploadToR2(ctx context.Context, key string, contentType strin
 func uploadHandler(pool *pgxpool.Pool,r2 *R2Client) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request) {
 	// --- CORS ---
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
+	// w.Header().Set("Access-Control-Allow-Origin", "*")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	// w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	// if r.Method == http.MethodOptions {
+	// 	w.WriteHeader(http.StatusNoContent)
+	// 	return
+	// }
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 		return
@@ -449,14 +465,14 @@ func uploadHandler(pool *pgxpool.Pool,r2 *R2Client) http.HandlerFunc{
 }
 
 func updateMemoHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-    w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT") 
-	w.WriteHeader(http.StatusOK)
-	if r.Method != http.MethodPut {
-		http.Error(w, "Only PUT method is allowd", http.StatusMethodNotAllowed)
-		return
-	}
+	// w.Header().Set("Access-Control-Allow-Origin", "*")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+    // w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT") 
+	// w.WriteHeader(http.StatusOK)
+	// if r.Method != http.MethodPut {
+	// 	http.Error(w, "Only PUT method is allowd", http.StatusMethodNotAllowed)
+	// 	return
+	// }
 
 	path := r.URL.Path
 	parts := strings.Split(path, "/")
@@ -544,13 +560,13 @@ func updateMemoHandler(w http.ResponseWriter, r *http.Request) {
 // }
 
 func createAlbumHandler(w http.ResponseWriter, r *http.Request){
-    w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
+    // w.Header().Set("Access-Control-Allow-Origin", "*")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	// w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	// if r.Method == http.MethodOptions {
+	// 	w.WriteHeader(http.StatusNoContent)
+	// 	return
+	// }
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 		return
@@ -624,37 +640,69 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
     })
 }
 
-func main(){
+func main() {
     if err := godotenv.Load(); err != nil {
-        // This is NORMAL in production where Railway provides env vars.
         log.Println("No .env file found, using environment variables from the system")
     }
 
-
     r2Client, err := NewR2Client()
-	if err != nil {
-		log.Fatalf("Failed to create R2 client: %v", err)
-		return
-	}
+    if err != nil {
+        log.Fatalf("Failed to create R2 client: %v", err)
+        return
+    }
 
-    db := connectDatabase() // returns *pgxpool.Pool
+    db := connectDatabase()
     defer db.Close()
 
-	http.HandleFunc("/api/upload",jwtMiddleware(uploadHandler(db, r2Client)))
-	http.HandleFunc("/api/images", jwtMiddleware(imageHandler(db ,r2Client)))
-	http.HandleFunc("/api/photo/", jwtMiddleware(updateMemoHandler))
-	http.HandleFunc("/api/register", registerHandler)
-	http.HandleFunc("/api/login", loginHandler)
-	http.HandleFunc("/api/verifyToken", jwtMiddleware(meHandler))
+    mux := http.NewServeMux()
 
-    //Only for local testing of album creation
-	// http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("uploads"))))
-	http.HandleFunc("/api/create_album", jwtMiddleware(createAlbumHandler))
-	// cleanupMissingFiles()
-	port := os.Getenv("PORT")
-if port == "" {
-    port = "8080"
-}
-log.Printf("Server running on :%s\n", port)
-http.ListenAndServe(":"+port, nil)
+    // Protected routes (JWT + CORS)
+    mux.Handle("/api/upload",
+        corsMiddleware(
+            jwtMiddleware(uploadHandler(db, r2Client)),
+        ),
+    )
+
+    mux.Handle("/api/images",
+        corsMiddleware(
+            jwtMiddleware(imageHandler(db, r2Client)),
+        ),
+    )
+
+    mux.Handle("/api/photo/",
+        corsMiddleware(
+            jwtMiddleware(http.HandlerFunc(updateMemoHandler)),
+        ),
+    )
+
+    mux.Handle("/api/verifyToken",
+        corsMiddleware(
+            jwtMiddleware(http.HandlerFunc(meHandler)),
+        ),
+    )
+
+    mux.Handle("/api/create_album",
+        corsMiddleware(
+            jwtMiddleware(http.HandlerFunc(createAlbumHandler)),
+        ),
+    )
+
+    // Public routes (CORS, no JWT)
+    mux.Handle("/api/register",
+        corsMiddleware(http.HandlerFunc(registerHandler)),
+    )
+
+    mux.Handle("/api/login",
+        corsMiddleware(http.HandlerFunc(loginHandler)),
+    )
+
+    port := os.Getenv("PORT")
+    if port == "" {
+        port = "8080"
+    }
+    log.Printf("Server running on :%s\n", port)
+
+    if err := http.ListenAndServe(":"+port, mux); err != nil {
+        log.Fatal(err)
+    }
 }

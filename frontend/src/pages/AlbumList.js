@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import LogoutButton from "/Users/myokhantaung/Desktop/Photo_Gallery/frontend/src/components/LogoutButton.js";
 import "../styles.css";
 
+const API = process.env.REACT_APP_API;
+
 function UploadHandler({ onUploadSuccess }) {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -16,7 +18,7 @@ function UploadHandler({ onUploadSuccess }) {
     const formData = new FormData();
     files.forEach((f) => formData.append("image", f)); // backend reads "image" slice
 
-    return fetch("http://localhost:8080/api/upload", {
+    return fetch(`${API}/api/upload`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
@@ -82,7 +84,7 @@ function App() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const refreshImages = useCallback(() => {
-    fetch("http://localhost:8080/api/images", {
+    fetch(`${API}/api/images`, {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     })

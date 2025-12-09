@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles.css";
+
+const API = process.env.REACT_APP_API;
+
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -9,7 +12,7 @@ function Login() {
   function handleSubmit(e) {
     e.preventDefault();
 
-    fetch("http://localhost:8080/api/login", {
+    fetch(`${API}/api/login`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
