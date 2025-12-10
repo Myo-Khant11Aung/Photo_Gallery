@@ -23,6 +23,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/rs/cors"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -68,7 +69,7 @@ type contextKey string
 const userContextKey = contextKey("userID")
 const wallContextKey = contextKey("wallID")
 
-func jwtMiddleware(next http.Handler) http.Handler {
+func jwtMiddleware(next http.HandlerFunc) http.HandlerFunc {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// w.Header().Set("Access-Control-Allow-Origin", "*")
         // w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -657,44 +658,29 @@ func main() {
     mux := http.NewServeMux()
 
     // Protected routes (JWT + CORS)
-    mux.Handle("/api/upload",
-        corsMiddleware(
-            jwtMiddleware(uploadHandler(db, r2Client)),
-        ),
-    )
+    mux.HandleFunc("/api/upload",jwtMiddleware(uploadHandler(db, r2Client)),)
 
-    mux.Handle("/api/images",
-        corsMiddleware(
-            jwtMiddleware(imageHandler(db, r2Client)),
-        ),
-    )
+    mux.HandleFunc("/api/images",jwtMiddleware(imageHandler(db, r2Client)),)
 
-    mux.Handle("/api/photo/",
-        corsMiddleware(
-            jwtMiddleware(http.HandlerFunc(updateMemoHandler)),
-        ),
-    )
+    mux.HandleFunc("/api/photo/",jwtMiddleware(http.HandlerFunc(updateMemoHandler)),)
 
-    mux.Handle("/api/verifyToken",
-        corsMiddleware(
-            jwtMiddleware(http.HandlerFunc(meHandler)),
-        ),
-    )
 
-    mux.Handle("/api/create_album",
-        corsMiddleware(
-            jwtMiddleware(http.HandlerFunc(createAlbumHandler)),
-        ),
-    )
+    mux.HandleFunc("/api/verifyToken",jwtMiddleware(http.HandlerFunc(meHandler)),)
+
+    mux.HandleFunc("/api/create_album",jwtMiddleware(http.HandlerFunc(createAlbumHandler)),)
 
     // Public routes (CORS, no JWT)
-    mux.Handle("/api/register",
-        corsMiddleware(http.HandlerFunc(registerHandler)),
-    )
+    mux.HandleFunc("/api/register",jwtMiddleware(http.HandlerFunc(registerHandler)),)
 
-    mux.Handle("/api/login",
-        corsMiddleware(http.HandlerFunc(loginHandler)),
-    )
+    mux.HandleFunc("/api/login",jwtMiddleware(http.HandlerFunc(loginHandler)),)
+
+	c := cors.Options{
+    AllowedOrigins:   []string{"*"},
+    AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+    AllowedHeaders:     []string{"Content-Type", "Authorization"},
+}
+
+	handler := cors.New(c).Handler(mux)
 
     port := os.Getenv("PORT")
     if port == "" {
@@ -702,7 +688,7 @@ func main() {
     }
     log.Printf("Server running on :%s\n", port)
 
-    if err := http.ListenAndServe(":"+port, mux); err != nil {
+    if err := http.ListenAndServe(":"+port, handler); err != nil {
         log.Fatal(err)
     }
 }

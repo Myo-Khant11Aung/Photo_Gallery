@@ -4,6 +4,8 @@ import "../styles.css";
 
 const API = process.env.REACT_APP_API;
 
+console.log("API:", process.env.REACT_APP_API);
+
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
