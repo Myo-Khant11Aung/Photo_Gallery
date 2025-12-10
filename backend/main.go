@@ -675,7 +675,7 @@ func main() {
     mux.HandleFunc("/api/login",jwtMiddleware(http.HandlerFunc(loginHandler)),)
 
 	c := cors.Options{
-    AllowedOrigins:   []string{"*"},
+    AllowedOrigins:   []string{"localhost:3000", "http://localhost:3000", },
     AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
     AllowedHeaders:     []string{"Content-Type", "Authorization"},
 }
