@@ -670,9 +670,9 @@ func main() {
     mux.HandleFunc("/api/create_album",jwtMiddleware(http.HandlerFunc(createAlbumHandler)),)
 
     // Public routes (CORS, no JWT)
-    mux.HandleFunc("/api/register",jwtMiddleware(http.HandlerFunc(registerHandler)),)
+    mux.HandleFunc("/api/register",registerHandler)
 
-    mux.HandleFunc("/api/login",jwtMiddleware(http.HandlerFunc(loginHandler)),)
+    mux.HandleFunc("/api/login",loginHandler)
 
 	c := cors.Options{
     AllowedOrigins:   []string{"localhost:3000", "http://localhost:3000", },
