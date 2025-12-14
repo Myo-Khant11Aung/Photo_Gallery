@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import LogoutButton from "/Users/myokhantaung/Desktop/Photo_Gallery/frontend/src/components/LogoutButton.js";
+import LogoutButton from "../components/LogoutButton";
 import "../styles.css";
 
 const API = process.env.REACT_APP_API;
