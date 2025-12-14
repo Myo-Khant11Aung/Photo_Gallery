@@ -28,20 +28,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func corsMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Access-Control-Allow-Origin", "*")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+// func corsMiddleware(next http.Handler) http.Handler {
+//     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//         w.Header().Set("Access-Control-Allow-Origin", "*")
+//         w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+//         w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 
-        if r.Method == http.MethodOptions {
-            w.WriteHeader(http.StatusNoContent)
-            return
-        }
+//         if r.Method == http.MethodOptions {
+//             w.WriteHeader(http.StatusNoContent)
+//             return
+//         }
 
-        next.ServeHTTP(w, r)
-    })
-}
+//         next.ServeHTTP(w, r)
+//     })
+// }
 
 
 func writeJSONError(w http.ResponseWriter, status int, msg string) {
@@ -747,7 +747,7 @@ func main() {
 
     mux.HandleFunc("/api/login",loginHandler)
 
-	mux.Handle("/api/photo/", jwtMiddleware(deletePhotoHandler(db, r2Client)),)
+	mux.Handle("/api/photo/delete", jwtMiddleware(deletePhotoHandler(db, r2Client)),)
 
 
 	c := cors.Options{

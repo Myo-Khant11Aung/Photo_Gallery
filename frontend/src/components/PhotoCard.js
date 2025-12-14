@@ -2,9 +2,6 @@ import { useState } from "react";
 import "lightgallery/css/lightgallery.css";
 import "lightgallery/css/lg-zoom.css";
 import "lightgallery/css/lg-thumbnail.css";
-import LightGallery from "lightgallery/react";
-import lgZoom from "lightgallery/plugins/zoom";
-import lgThumbnail from "lightgallery/plugins/thumbnail";
 
 const API = process.env.REACT_APP_API;
 
@@ -26,7 +23,7 @@ function PhotoCard({ image, onMemoUpdated, index, onDelete }) {
     setInputMemo(e.target.value);
   }
   function handleDeleteClick() {
-    fetch(`${API}/api/photo/${image.id}`, {
+    fetch(`${API}/api/photo/delete/${image.id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     })
