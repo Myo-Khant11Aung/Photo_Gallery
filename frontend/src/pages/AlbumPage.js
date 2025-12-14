@@ -22,6 +22,10 @@ function AlbumPage() {
       .then((data) => setImages(data.filter((img) => img.album_date === date)));
   }, [date, token]);
 
+  function handleDelete(id) {
+    setImages((prev) => prev.filter((img) => img.id !== id));
+  }
+
   useEffect(() => {
     refreshImages();
   }, [refreshImages]);
@@ -58,9 +62,27 @@ function AlbumPage() {
             image={image}
             index={index}
             onMemoUpdated={refreshImages}
+            onDelete={handleDelete}
           />
         ))}
       </div>
+      {/* <button
+        type="button"
+        className="upload-fab"
+        onClick={openPicker}
+        title={uploading ? "Uploading…" : "Upload photos"}
+        disabled={uploading}
+      >
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M12 5v14m-7-7h14"
+            stroke="white"
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button> */}
     </div>
   );
 }

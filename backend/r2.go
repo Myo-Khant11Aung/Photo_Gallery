@@ -53,3 +53,11 @@ func NewR2Client() (*R2Client, error) {
 		bucket: bucketName,
 	}, nil
 }
+
+func (c *R2Client) DeleteObject(ctx context.Context, key string) error {
+    _, err := c.s3.DeleteObject(ctx, &s3.DeleteObjectInput{
+        Bucket: aws.String(c.bucket),
+        Key:    aws.String(key),
+    })
+    return err
+}

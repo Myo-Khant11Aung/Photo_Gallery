@@ -383,3 +383,36 @@ body {
 .lightbox-item img {
   cursor: zoom-in;
 }
+
+.photo-menu-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 18px;
+  z-index: 5;
+}
+
+.photo-menu {
+  position: absolute;
+  top: 35px;
+  right: 6px;
+  background: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+.photo-menu .delete-btn {
+  background: none;
+  border: none;
+  color: red;
+  font-weight: bold;
+  cursor: pointer;
+}

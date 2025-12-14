@@ -2,8 +2,39 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import LogoutButton from "../components/LogoutButton";
 import "../styles.css";
+import heic2any from "heic2any";
 
 const API = process.env.REACT_APP_API;
+
+async function convertIfHeic(file) {
+  const lowerName = file.name.toLowerCase();
+
+  // If it's not a HEIC/HEIF file, just return it as-is
+  if (
+    !lowerName.endsWith(".heic") &&
+    !lowerName.endsWith(".heif") &&
+    file.type !== "image/heic" &&
+    file.type !== "image/heif"
+  ) {
+    return file;
+  }
+
+  // Convert HEIC → JPEG using heic2any
+  const convertedBlob = await heic2any({
+    blob: file,
+    toType: "image/jpeg",
+    quality: 0.9,
+  });
+
+  // Wrap the Blob back into a File so FormData works normally
+  const newName = lowerName.endsWith(".heic")
+    ? file.name.replace(/\.heic$/i, ".jpg")
+    : lowerName.endsWith(".heif")
+    ? file.name.replace(/\.heif$/i, ".jpg")
+    : file.name + ".jpg";
+
+  return new File([convertedBlob], newName, { type: "image/jpeg" });
+}
 
 function UploadHandler({ onUploadSuccess }) {
   const fileInputRef = useRef(null);
@@ -14,18 +45,26 @@ function UploadHandler({ onUploadSuccess }) {
     fileInputRef.current?.click();
   }
 
-  function uploadManyAtOnce(files) {
+  async function uploadManyAtOnce(files) {
     const formData = new FormData();
-    files.forEach((f) => formData.append("image", f)); // backend reads "image" slice
 
-    return fetch(`${API}/api/upload`, {
+    // Convert each file if needed
+    for (const f of files) {
+      const processed = await convertIfHeic(f);
+      formData.append("image", processed); // backend still reads "image"
+    }
+
+    const res = await fetch(`${API}/api/upload`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
-    }).then((res) => {
-      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
-      return res.json();
     });
+
+    if (!res.ok) {
+      throw new Error(`Upload failed: ${res.status}`);
+    }
+
+    return res.json();
   }
 
   function handleChange(e) {
@@ -129,26 +168,6 @@ function App() {
           </div>
         ))}
       </div>
-      {/* <div className="album-list">
-        {Object.entries(album).map(([date, img]) => (
-          <div
-            key={date}
-            className="album-card"
-            onClick={() => navigate(`/album/${date}`)}
-          >
-            <h3 className="album-card-title">{date}</h3>
-            <div className="album-media">
-              <img
-                src={`http://localhost:8080/images/${encodeURIComponent(
-                  img[0].filename
-                )}`}
-                alt=""
-              />
-            </div>
-            <p className="album-meta">{img.length} photo(s)</p>
-          </div>
-        ))}
-      </div> */}
     </div>
   );
 }

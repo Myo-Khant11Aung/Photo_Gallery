@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
@@ -641,6 +642,78 @@ func meHandler(w http.ResponseWriter, r *http.Request) {
     })
 }
 
+func deletePhotoHandler(db *pgxpool.Pool, r2 *R2Client) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+
+        // Extract ID from URL
+        parts := strings.Split(r.URL.Path, "/")
+        if len(parts) < 4 {
+            http.Error(w, "Invalid request", http.StatusBadRequest)
+            return
+        }
+
+        idStr := parts[3]
+        id, err := strconv.Atoi(idStr)
+        if err != nil {
+            http.Error(w, "Invalid ID", http.StatusBadRequest)
+            return
+        }
+
+        ctx := r.Context()
+        userWallID := ctx.Value(wallContextKey).(int)
+
+        // STEP 1 — Verify image exists & belongs to that wall
+        var filename string
+        var wallID int
+
+        err = db.QueryRow(ctx,
+            `SELECT filename, wall_id FROM images WHERE id = $1`,
+            id,
+        ).Scan(&filename, &wallID)
+
+        if err == pgx.ErrNoRows {
+            http.Error(w, "Image not found", http.StatusNotFound)
+            return
+        }
+
+        if err != nil {
+            http.Error(w, "DB query failed", http.StatusInternalServerError)
+            return
+        }
+
+        // Security check — only delete images in your own wall
+        if wallID != userWallID {
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+
+        // STEP 2 — Delete from R2
+        err = r2.DeleteObject(ctx, filename)
+        if err != nil {
+            http.Error(w, "Failed to delete from storage: "+err.Error(), 500)
+            return
+        }
+
+        // STEP 3 — Delete from DB
+        _, err = db.Exec(ctx,
+            `DELETE FROM images WHERE id = $1`,
+            id,
+        )
+        if err != nil {
+            http.Error(w, "Failed to delete from database", http.StatusInternalServerError)
+            return
+        }
+
+        // STEP 4 — Return success JSON
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]any{
+            "success": true,
+            "deleted_id": id,
+        })
+    }
+}
+
+
 func main() {
     if err := godotenv.Load(); err != nil {
         log.Println("No .env file found, using environment variables from the system")
@@ -673,6 +746,9 @@ func main() {
     mux.HandleFunc("/api/register",registerHandler)
 
     mux.HandleFunc("/api/login",loginHandler)
+
+	mux.Handle("/api/photo/", jwtMiddleware(deletePhotoHandler(db, r2Client)),)
+
 
 	c := cors.Options{
     AllowedOrigins:   []string{"localhost:3000", "http://localhost:3000", },

@@ -8,9 +8,11 @@ import lgThumbnail from "lightgallery/plugins/thumbnail";
 
 const API = process.env.REACT_APP_API;
 
-function PhotoCard({ image, onMemoUpdated, index }) {
+function PhotoCard({ image, onMemoUpdated, index, onDelete }) {
   const [inputMemo, setInputMemo] = useState(image.memo || "");
   const [isEditing, setIsEditing] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const token = localStorage.getItem("token");
   function handleEditingStatus() {
     setIsEditing(true);
@@ -22,6 +24,17 @@ function PhotoCard({ image, onMemoUpdated, index }) {
 
   function handleMemoChange(e) {
     setInputMemo(e.target.value);
+  }
+  function handleDeleteClick() {
+    fetch(`${API}/api/photo/${image.id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then(() => {
+        if (onDelete) onDelete(image.id);
+      })
+      .catch((err) => console.error("Failed to delete", err));
   }
 
   function handleMemoUpload() {
@@ -44,6 +57,22 @@ function PhotoCard({ image, onMemoUpdated, index }) {
 
   return (
     <div className="photo-card">
+      <button
+        className="photo-menu-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          setMenuOpen(!menuOpen);
+        }}
+      >
+        ⋮
+      </button>
+
+      {menuOpen && (
+        <div className="photo-menu">
+          <button onClick={handleDeleteClick}>Delete Photo</button>
+        </div>
+      )}
+
       <div
         className="photo-card-image"
         onClick={() => {
