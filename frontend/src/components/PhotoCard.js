@@ -25,7 +25,7 @@ function PhotoCard({ image, onMemoUpdated, index, onDelete }) {
   function handleDeleteClick(e) {
     e.stopPropagation();
 
-    fetch(`${API}/api/photo/${image.id}`, {
+    fetch(`${API}/api/photo/delete/${image.id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     })
