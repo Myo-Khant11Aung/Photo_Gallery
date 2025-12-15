@@ -747,7 +747,7 @@ func main() {
 
     mux.HandleFunc("/api/login",loginHandler)
 
-	mux.Handle("/api/photo/delete", jwtMiddleware(deletePhotoHandler(db, r2Client)),)
+	mux.Handle("/api/photo/delete/", jwtMiddleware(deletePhotoHandler(db, r2Client)),)
 
 
 	c := cors.Options{

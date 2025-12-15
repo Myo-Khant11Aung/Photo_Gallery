@@ -22,14 +22,20 @@ function PhotoCard({ image, onMemoUpdated, index, onDelete }) {
   function handleMemoChange(e) {
     setInputMemo(e.target.value);
   }
-  function handleDeleteClick() {
-    fetch(`${API}/api/photo/delete/${image.id}`, {
+  function handleDeleteClick(e) {
+    e.stopPropagation();
+
+    fetch(`${API}/api/photo/${image.id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Delete failed");
+        return res.json();
+      })
       .then(() => {
-        if (onDelete) onDelete(image.id);
+        setMenuOpen(false);
+        onDelete?.(image.id);
       })
       .catch((err) => console.error("Failed to delete", err));
   }
@@ -65,8 +71,10 @@ function PhotoCard({ image, onMemoUpdated, index, onDelete }) {
       </button>
 
       {menuOpen && (
-        <div className="photo-menu">
-          <button onClick={handleDeleteClick}>Delete Photo</button>
+        <div className="photo-menu" onClick={(e) => e.stopPropagation()}>
+          <button className="delete-btn" onClick={handleDeleteClick}>
+            Delete Photo
+          </button>
         </div>
       )}
 
@@ -80,6 +88,7 @@ function PhotoCard({ image, onMemoUpdated, index, onDelete }) {
       >
         <img src={src} alt="" />
       </div>
+
       <div className="photo-card-body">
         {isEditing ? (
           <>
