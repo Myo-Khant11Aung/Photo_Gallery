@@ -647,12 +647,11 @@ func deletePhotoHandler(db *pgxpool.Pool, r2 *R2Client) http.HandlerFunc {
 
         // Extract ID from URL
         parts := strings.Split(r.URL.Path, "/")
-        if len(parts) < 4 {
-            http.Error(w, "Invalid request", http.StatusBadRequest)
-            return
+        if len(parts) < 5 {
+        http.Error(w, "Invalid request", http.StatusBadRequest)
+        return
         }
-
-        idStr := parts[3]
+        idStr := parts[4]
         id, err := strconv.Atoi(idStr)
         if err != nil {
             http.Error(w, "Invalid ID", http.StatusBadRequest)
