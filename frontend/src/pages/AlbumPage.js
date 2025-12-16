@@ -7,6 +7,8 @@ import "lightgallery/css/lg-thumbnail.css";
 import LightGallery from "lightgallery/react";
 import lgZoom from "lightgallery/plugins/zoom";
 import lgThumbnail from "lightgallery/plugins/thumbnail";
+import UploadHandler from "../components/uploadHandler";
+
 
 const API = process.env.REACT_APP_API;
 
@@ -37,6 +39,7 @@ function AlbumPage() {
         <button className="back-btn" onClick={() => navigate(`/`)}>
           ← Back
         </button>
+        <UploadHandler onUploadSuccess={refreshImages} />
       </div>
 
       <div className="album-header">
@@ -66,23 +69,6 @@ function AlbumPage() {
           />
         ))}
       </div>
-      {/* <button
-        type="button"
-        className="upload-fab"
-        onClick={openPicker}
-        title={uploading ? "Uploading…" : "Upload photos"}
-        disabled={uploading}
-      >
-        <svg viewBox="0 0 24 24">
-          <path
-            d="M12 5v14m-7-7h14"
-            stroke="white"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-          />
-        </svg>
-      </button> */}
     </div>
   );
 }
