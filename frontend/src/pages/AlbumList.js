@@ -6,31 +6,12 @@ import "../styles.css";
 const API = process.env.REACT_APP_API;
 
 function App() {
-  const [images, setImages] = useState([]);
   const [albumCreationClicked, setAlbumCreationClicked] = useState(false);
   const [albumName, setAlbumName] = useState("");
   const [albums, setAlbums] = useState([]);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
-  const refreshImages = useCallback(() => {
-    fetch(`${API}/api/images`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => setImages(data || []));
-  }, [token]);
-  useEffect(() => {
-    refreshImages();
-  }, [refreshImages]);
-  const album = {};
-  images.forEach((image) => {
-    const date = image.album_date;
-    if (!album[date]) {
-      album[date] = [];
-    }
-    album[date].push(image);
-  });
+
   const refreshAlbums = useCallback(() => {
     fetch(`${API}/api/albums`, {
       method: "GET",
@@ -39,6 +20,10 @@ function App() {
       .then((res) => res.json())
       .then((data) => setAlbums(data || []));
   }, [token]);
+
+  useEffect(() => {
+    refreshAlbums();
+  }, [refreshAlbums]);
 
   function createAlbumHandler() {
     if (!albumName.trim()) {
@@ -76,21 +61,13 @@ function App() {
         <h1 className="album-title">Photo Gallery</h1>
       </div>
       <div className="album-list">
-        {Object.entries(album).map(([date, img]) => (
-          <div
-            key={date}
-            className="album-card"
-            onClick={() => navigate(`/album/${date}`)}
-          >
-            <h3 className="album-card-title">{date}</h3>
-
-            <div className="album-media">
-              <img src={img[0].url} alt="" className="album-thumbnail" />
-            </div>
-
-            <p className="album-meta">{img.length} photo(s)</p>
-          </div>
-        ))}
+        albums.map(album => (
+        <AlbumCard
+          key={album.id}
+          name={album.name}
+          onClick={() => navigate(`/album/${album.id}`)}
+        />
+        ))
       </div>
 
       {/* Floating "Create Album" circle button */}

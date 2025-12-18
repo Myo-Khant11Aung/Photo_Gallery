@@ -32,7 +32,7 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.albums (
     id integer DEFAULT nextval('public.albums_id_seq'::regclass) NOT NULL,
-    album_date date NOT NULL,
+    album_date date DEFAULT CURRENT_DATE NOT NULL,
     wall_id integer,
     memo text,
     name text DEFAULT 'Untitled Album'::text NOT NULL
@@ -254,4 +254,5 @@ ALTER TABLE ONLY public.users
 
 INSERT INTO public.schema_migrations (version) VALUES
     ('20250804232817'),
-    ('20251019214453');
+    ('20251019214453'),
+    ('20251218194013');
