@@ -417,3 +417,72 @@ body {
   font-weight: bold;
   cursor: pointer;
 }
+
+/* ===== Modal Overlay ===== */
+.modal-overlay {
+  position: fixed;          /* stays on screen even when scrolling */
+  top: 0;
+  left: 0;
+  width: 100vw;             /* full screen width */
+  height: 100vh;            /* full screen height */
+  background: rgba(0, 0, 0, 0.5); /* dark transparent background */
+
+  display: flex;            /* center the modal */
+  align-items: center;
+  justify-content: center;
+
+  z-index: 1000;            /* above everything else */
+}
+
+/* ===== Modal Box ===== */
+.modal-box {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  width: 320px;
+  max-width: 90vw;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== Modal Title ===== */
+.modal-box h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 20px;
+}
+
+/* ===== Input ===== */
+.modal-box input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 16px;
+
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+}
+
+/* ===== Buttons ===== */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-actions button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.modal-actions .cancel-btn {
+  background: #ddd;
+}
+
+.modal-actions .confirm-btn {
+  background: #007bff;
+  color: white;
+}

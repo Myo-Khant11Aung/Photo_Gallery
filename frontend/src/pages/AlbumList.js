@@ -2,14 +2,14 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import LogoutButton from "../components/LogoutButton";
 import "../styles.css";
-import heic2any from "heic2any";
-import UploadHandler from "../components/uploadHandler";
 
 const API = process.env.REACT_APP_API;
 
-
 function App() {
   const [images, setImages] = useState([]);
+  const [albumCreationClicked, setAlbumCreationClicked] = useState(false);
+  const [albumName, setAlbumName] = useState("");
+  const [albums, setAlbums] = useState([]);
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
   const refreshImages = useCallback(() => {
@@ -31,12 +31,39 @@ function App() {
     }
     album[date].push(image);
   });
+  const refreshAlbums = useCallback(() => {
+    fetch(`${API}/api/albums`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setAlbums(data || []));
+  }, [token]);
 
-function handleCreateAlbum() {
-    // simplest version: "new album" = today's date
-    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    navigate(`/album/${today}`);
+  function createAlbumHandler() {
+    if (!albumName.trim()) {
+      alert("Album name cannot be empty");
+      return;
+    }
+    fetch(`${API}/api/create_album`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: albumName,
+      }),
+    }).then(() => {
+      setAlbumCreationClicked(false);
+      setAlbumName("");
+      refreshAlbums();
+    });
   }
+
+  let handleClick = () => {
+    setAlbumCreationClicked(!albumCreationClicked);
+  };
 
   return (
     <div className="album-page">
@@ -70,7 +97,7 @@ function handleCreateAlbum() {
       <button
         type="button"
         className="upload-fab"
-        onClick={handleCreateAlbum}
+        onClick={handleClick}
         title="Create new album"
       >
         <svg viewBox="0 0 24 24">
@@ -83,6 +110,34 @@ function handleCreateAlbum() {
           />
         </svg>
       </button>
+      {albumCreationClicked && (
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <input
+              type="text"
+              placeholder="Enter album title..."
+              value={albumName}
+              onChange={(e) => setAlbumName(e.target.value)}
+            ></input>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="confirm-btn"
+                onClick={createAlbumHandler}
+              >
+                Create
+              </button>
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={handleClick}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
