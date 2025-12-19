@@ -5,6 +5,23 @@ import "../styles.css";
 
 const API = process.env.REACT_APP_API;
 
+function AlbumCard({ album, onClick }) {
+  return (
+    <div className="album-card" onClick={onClick}>
+      <h3 className="album-card-title">{album.name}</h3>
+
+      <div className="album-media">
+        {/* Placeholder image for now */}
+        <div className="album-thumbnail placeholder" />
+      </div>
+
+      {album.photo_count !== undefined && (
+        <p className="album-meta">{album.photo_count} photo(s)</p>
+      )}
+    </div>
+  );
+}
+
 function App() {
   const [albumCreationClicked, setAlbumCreationClicked] = useState(false);
   const [albumName, setAlbumName] = useState("");
@@ -61,13 +78,13 @@ function App() {
         <h1 className="album-title">Photo Gallery</h1>
       </div>
       <div className="album-list">
-        albums.map(album => (
-        <AlbumCard
-          key={album.id}
-          name={album.name}
-          onClick={() => navigate(`/album/${album.id}`)}
-        />
-        ))
+        {albums.map((album) => (
+          <AlbumCard
+            key={album.id}
+            name={album.name}
+            onClick={() => navigate(`/album/${album.id}`)}
+          />
+        ))}
       </div>
 
       {/* Floating "Create Album" circle button */}
