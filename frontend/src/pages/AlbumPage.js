@@ -9,20 +9,19 @@ import lgZoom from "lightgallery/plugins/zoom";
 import lgThumbnail from "lightgallery/plugins/thumbnail";
 import UploadHandler from "../components/uploadHandler";
 
-
 const API = process.env.REACT_APP_API;
 
 function AlbumPage() {
-  const { date } = useParams();
+  const { albumId } = useParams();
   const [images, setImages] = useState([]);
   const token = localStorage.getItem("token");
   const refreshImages = useCallback(() => {
-    fetch(`${API}/api/images`, {
+    fetch(`${API}/api/albums/${albumId}/images`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => setImages(data.filter((img) => img.album_date === date)));
-  }, [date, token]);
+      .then((data) => setImages(data));
+  }, [albumId, token]);
 
   function handleDelete(id) {
     setImages((prev) => prev.filter((img) => img.id !== id));
@@ -39,11 +38,11 @@ function AlbumPage() {
         <button className="back-btn" onClick={() => navigate(`/`)}>
           ← Back
         </button>
-        <UploadHandler onUploadSuccess={refreshImages} />
+        <UploadHandler albumId={albumId} onUploadSuccess={refreshImages} />
       </div>
 
       <div className="album-header">
-        <h2 className="album-title">Album for {date}</h2>
+        <h2 className="album-title">Album for {albumId}</h2>
       </div>
       <LightGallery
         dynamic={true}

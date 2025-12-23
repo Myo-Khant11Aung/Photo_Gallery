@@ -3,7 +3,6 @@ import heic2any from "heic2any";
 
 const API = process.env.REACT_APP_API;
 
-
 async function convertIfHeic(file) {
   const lowerName = file.name.toLowerCase();
 
@@ -34,7 +33,7 @@ async function convertIfHeic(file) {
   return new File([convertedBlob], newName, { type: "image/jpeg" });
 }
 
-function UploadHandler({ onUploadSuccess }) {
+function UploadHandler({ albumId, onUploadSuccess }) {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const token = localStorage.getItem("token");
@@ -50,6 +49,7 @@ function UploadHandler({ onUploadSuccess }) {
     for (const f of files) {
       const processed = await convertIfHeic(f);
       formData.append("image", processed); // backend still reads "image"
+      formData.append("album_id", albumId);
     }
 
     const res = await fetch(`${API}/api/upload`, {

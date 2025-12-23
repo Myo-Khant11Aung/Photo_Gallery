@@ -11,7 +11,7 @@ function App() {
       <Routes>
         <Route element={<PrivateRoute />}>
           <Route path="/" element={<AlbumList />}></Route>
-          <Route path="/album/:date" element={<AlbumPage />}></Route>
+          <Route path="/album/:albumId" element={<AlbumPage />}></Route>
         </Route>
         <Route path="/login" element={<Login />}></Route>
         <Route path="/register" element={<Register />}></Route>
