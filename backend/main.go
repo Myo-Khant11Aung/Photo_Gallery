@@ -206,6 +206,46 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func demoHandler(pool *pgxpool.Pool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		demoEmail := os.Getenv("DEMO_EMAIL")
+		demoPassword := os.Getenv("DEMO_PASSWORD")
+		var storedPassword string
+		var userID int
+		var wallID sql.NullInt32
+		ctx := context.Background()
+		err := pool.QueryRow(ctx, "SELECT id, password_hash, wall_id FROM users WHERE email = $1", demoEmail).Scan(&userID, &storedPassword, &wallID)
+		if err != nil {
+			http.Error(w, "User not found", http.StatusUnauthorized)
+			return
+		}
+		if !CheckPasswordHash(demoPassword, storedPassword) {
+			http.Error(w, "Invalid Password", http.StatusUnauthorized)
+			return
+		}
+		if !wallID.Valid {
+			http.Error(w, "User has no wall assigned", http.StatusForbidden)
+			return
+		}
+		token, err := generateJWT(userID, int(wallID.Int32))
+		if err != nil {
+			http.Error(w, "Failed to generate token", http.StatusInternalServerError)
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"status":  "login successful",
+			"user_id": userID,
+			"wall_id": wallID,
+			"token":   token,
+		})
+	}
+}
+
 func (c *R2Client) PresignURL(ctx context.Context, key string, expires time.Duration, w http.ResponseWriter) (string, error) {
 	presigner := s3.NewPresignClient(c.s3)
 	out, err := presigner.PresignGetObject(ctx, &s3.GetObjectInput{
@@ -721,6 +761,8 @@ func main() {
 	mux.HandleFunc("/api/albums", jwtMiddleware(getAlbumsHandler(db, r2Client)))
 
 	mux.Handle("/api/albums/", jwtMiddleware(getAlbumImagesHandler(db, r2Client)))
+
+	mux.Handle("/api/demo-login", http.HandlerFunc(demoHandler(db)))
 	c := cors.Options{
 		AllowedOrigins: []string{"https://photo-gallery-steel-delta.vercel.app", "https://mka.dog"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},

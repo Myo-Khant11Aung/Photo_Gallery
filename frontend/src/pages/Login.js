@@ -39,6 +39,30 @@ function Login() {
         }
       });
   }
+  function handleDemoLogin() {
+    fetch(`${API}/api/demo-login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Demo login failed");
+        return res.json();
+      })
+      .then((data) => {
+        console.log("Demo login success:", data);
+        localStorage.setItem("token", data.token);
+        navigate("/");
+      })
+      .catch((err) => {
+        if (err.message.includes("403")) {
+          alert(
+            "You do not have access yet. Please wait until you're assigned a wall."
+          );
+        }
+      });
+  }
 
   return (
     <div className="auth-page">
@@ -71,6 +95,13 @@ function Login() {
               className="auth-button"
             >
               Sign Up
+            </button>
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              className="auth-button"
+            >
+              Demo Login
             </button>
           </div>
         </form>
