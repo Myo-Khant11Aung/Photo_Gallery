@@ -722,7 +722,7 @@ func main() {
 
 	mux.Handle("/api/albums/", jwtMiddleware(getAlbumImagesHandler(db, r2Client)))
 	c := cors.Options{
-		AllowedOrigins: []string{"localhost:3000", "http://localhost:3000"},
+		AllowedOrigins: []string{"photo-gallery-steel-delta.vercel.app", "mka.dog"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Content-Type", "Authorization"},
 	}
