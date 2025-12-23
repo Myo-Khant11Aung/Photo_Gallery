@@ -466,7 +466,7 @@ func createAlbumHandler(pool *pgxpool.Pool) http.HandlerFunc {
 	}
 }
 
-func getAlbumsHandler(pool *pgxpool.Pool) http.HandlerFunc {
+func getAlbumsHandler(pool *pgxpool.Pool, r2 *R2Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Only GET allowed", http.StatusMethodNotAllowed)
@@ -491,6 +491,26 @@ func getAlbumsHandler(pool *pgxpool.Pool) http.HandlerFunc {
 				http.Error(w, "Failed to scan album: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+
+			// 🔹 Fetch ONE image as thumbnail
+			var filename string
+			err := pool.QueryRow(ctx, `
+				SELECT filename
+				FROM images
+				WHERE album_id = $1
+				ORDER BY upload_time ASC
+				LIMIT 1
+			`, album.ID).Scan(&filename)
+
+			if err == nil {
+				// Generate presigned URL
+				url, err := r2.PresignURL(ctx, filename, 10*time.Minute, w)
+				if err == nil {
+					album.ThumbnailURL = url
+				}
+			}
+
+			// If no image exists, ThumbnailURL stays empty
 			albums = append(albums, album)
 		}
 		if err := rows.Err(); err != nil {
@@ -698,7 +718,7 @@ func main() {
 
 	mux.Handle("/api/photo/delete/", jwtMiddleware(deletePhotoHandler(db, r2Client)))
 
-	mux.HandleFunc("/api/albums", jwtMiddleware(getAlbumsHandler(db)))
+	mux.HandleFunc("/api/albums", jwtMiddleware(getAlbumsHandler(db, r2Client)))
 
 	mux.Handle("/api/albums/", jwtMiddleware(getAlbumImagesHandler(db, r2Client)))
 	c := cors.Options{

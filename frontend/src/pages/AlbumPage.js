@@ -20,7 +20,7 @@ function AlbumPage() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
-      .then((data) => setImages(data));
+      .then((data) => setImages(data || []));
   }, [albumId, token]);
 
   function handleDelete(id) {

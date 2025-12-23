@@ -20,6 +20,7 @@ type createAlbumRequest struct {
 }
 
 type Album struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID           int    `json:"id"`
+	Name         string `json:"name"`
+	ThumbnailURL string `json:"thumbnail_url"`
 }

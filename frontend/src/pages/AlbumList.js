@@ -12,7 +12,15 @@ function AlbumCard({ album, onClick }) {
 
       <div className="album-media">
         {/* Placeholder image for now */}
-        <div className="album-thumbnail placeholder" />
+        {album.thumbnail_url ? (
+          <img
+            src={album.thumbnail_url}
+            className="album-thumbnail"
+            alt={`${album.name} thumbnail`}
+          />
+        ) : (
+          <div className="album-thumbnail placeholder" />
+        )}
       </div>
 
       {album.photo_count !== undefined && (
@@ -80,7 +88,7 @@ function App() {
         {albums.map((album) => (
           <AlbumCard
             key={album.id}
-            name={album}
+            album={album}
             onClick={() => navigate(`/album/${album.id}`)}
           />
         ))}
