@@ -12,12 +12,10 @@ import (
 	"os"
 	"path/filepath"
 
-	// "photogallery/r2"
 	"strconv"
 	"strings"
 	"time"
 
-	// "github.com/MaestroError/go-libheif"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/golang-jwt/jwt/v5"
@@ -27,21 +25,6 @@ import (
 	"github.com/rs/cors"
 	"golang.org/x/crypto/bcrypt"
 )
-
-// func corsMiddleware(next http.Handler) http.Handler {
-//     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//         w.Header().Set("Access-Control-Allow-Origin", "*")
-//         w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-//         w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-
-//         if r.Method == http.MethodOptions {
-//             w.WriteHeader(http.StatusNoContent)
-//             return
-//         }
-
-//         next.ServeHTTP(w, r)
-//     })
-// }
 
 func writeJSONError(w http.ResponseWriter, status int, msg string) {
 	w.Header().Set("Content-Type", "application/json")
@@ -137,14 +120,6 @@ func generateJWT(userID int, wallID int) (string, error) {
 }
 
 func registerHandler(w http.ResponseWriter, r *http.Request) {
-	// w.Header().Set("Access-Control-Allow-Origin", "*")
-	// w.Header().Set("Content-Type", "application/json")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	// w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT")
-	// if r.Method == http.MethodOptions {
-	//     w.WriteHeader(http.StatusOK)
-	//     return
-	// }
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 		return
@@ -180,14 +155,6 @@ func registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loginHandler(w http.ResponseWriter, r *http.Request) {
-	// w.Header().Set("Access-Control-Allow-Origin", "*")
-	// w.Header().Set("Content-Type", "application/json")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-	// w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT")
-	// if r.Method == http.MethodOptions {
-	//     w.WriteHeader(http.StatusOK)
-	//     return
-	// }
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only Post Allowed", http.StatusMethodNotAllowed)
 		return
@@ -326,6 +293,18 @@ func uploadHandler(pool *pgxpool.Pool, r2 *R2Client) http.HandlerFunc {
 			return
 		}
 
+		albumIDStr := r.FormValue("album_id")
+		if albumIDStr == "" {
+			http.Error(w, "album_id is required", http.StatusBadRequest)
+			return
+		}
+
+		albumID, err := strconv.Atoi(albumIDStr)
+		if err != nil {
+			http.Error(w, "Invalid album_id", http.StatusBadRequest)
+			return
+		}
+
 		// Expect multiple files under the same field name "image"
 		files := r.MultipartForm.File["image"]
 		if len(files) == 0 {
@@ -335,6 +314,21 @@ func uploadHandler(pool *pgxpool.Pool, r2 *R2Client) http.HandlerFunc {
 
 		userID := r.Context().Value(userContextKey).(int)
 		wallID := r.Context().Value(wallContextKey).(int)
+
+		var exists bool
+		err = pool.QueryRow(
+			ctx,
+			`SELECT EXISTS (
+				SELECT 1 FROM albums WHERE id = $1 AND wall_id = $2
+			)`,
+			albumID,
+			wallID,
+		).Scan(&exists)
+
+		if err != nil || !exists {
+			http.Error(w, "Album not found or unauthorized", http.StatusUnauthorized)
+			return
+		}
 
 		type Saved struct {
 			Filename string `json:"filename"`
@@ -370,10 +364,11 @@ func uploadHandler(pool *pgxpool.Pool, r2 *R2Client) http.HandlerFunc {
 			}
 			// Save only the key in DB (not a URL)
 			const sql = `
-			INSERT INTO images (filename, upload_time, memo, user_id, wall_id)
-			VALUES ($1, NOW(), $2, $3, $4)
+			INSERT INTO images (filename, upload_time, memo, user_id, wall_id, album_id)
+VALUES ($1, NOW(), $2, $3, $4, $5)
+
 		`
-			if _, err := pool.Exec(ctx, sql, key, "", userID, wallID); err != nil {
+			if _, err := pool.Exec(ctx, sql, key, "", userID, wallID, albumID); err != nil {
 				http.Error(w, "DB insert failed", http.StatusInternalServerError)
 				return
 			}
@@ -430,52 +425,6 @@ func updateMemoHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"status": "success"})
 
 }
-
-// func cleanupMissingFiles() {
-// 	ctx := context.Background()
-// 	pool := connectDatabase()
-// 	defer pool.Close()
-
-// 	// Step 1: Get all files from uploads/ folder
-// 	filesOnDisk, err := os.ReadDir("uploads")
-// 	if err != nil {
-// 		log.Fatalf("Failed to read uploads folder: %v", err)
-// 	}
-
-// 	// Build a map of existing filenames
-// 	fileMap := make(map[string]bool)
-// 	for _, file := range filesOnDisk {
-// 		fileMap[file.Name()] = true
-// 	}
-
-// 	// Step 2: Get all DB image records
-// 	rows, err := pool.Query(ctx, "SELECT id, filename FROM images")
-// 	if err != nil {
-// 		log.Fatalf("Failed to query images: %v", err)
-// 	}
-// 	defer rows.Close()
-
-// 	var deleted int
-
-// 	for rows.Next() {
-// 		var id int
-// 		var filename string
-// 		rows.Scan(&id, &filename)
-
-// 		if !fileMap[filename] {
-// 			// File is missing – delete the DB record
-// 			_, err := pool.Exec(ctx, "DELETE FROM images WHERE id = $1", id)
-// 			if err != nil {
-// 				log.Printf("Failed to delete image ID %d: %v", id, err)
-// 			} else {
-// 				log.Printf("Deleted image ID %d (missing file %s)", id, filename)
-// 				deleted++
-// 			}
-// 		}
-// 	}
-
-// 	log.Printf("Cleanup complete. %d entries deleted.", deleted)
-// }
 
 func createAlbumHandler(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -633,6 +582,88 @@ func deletePhotoHandler(db *pgxpool.Pool, r2 *R2Client) http.HandlerFunc {
 	}
 }
 
+func getAlbumImagesHandler(pool *pgxpool.Pool, r2 *R2Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if r.Method != http.MethodGet {
+			http.Error(w, "Only GET allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// URL: /api/albums/{id}/images
+		parts := strings.Split(r.URL.Path, "/")
+		if len(parts) < 4 {
+			http.Error(w, "Invalid request", http.StatusBadRequest)
+			return
+		}
+
+		albumID, err := strconv.Atoi(parts[3])
+		if err != nil {
+			http.Error(w, "Invalid album id", http.StatusBadRequest)
+			return
+		}
+
+		ctx := r.Context()
+		wallID := ctx.Value(wallContextKey).(int)
+
+		// Security check: album must belong to wall
+		var exists bool
+		err = pool.QueryRow(ctx,
+			`SELECT EXISTS (
+				SELECT 1 FROM albums WHERE id = $1 AND wall_id = $2
+			)`,
+			albumID, wallID,
+		).Scan(&exists)
+
+		if err != nil || !exists {
+			http.Error(w, "Album not found", http.StatusNotFound)
+			return
+		}
+
+		rows, err := pool.Query(ctx, `
+			SELECT id, filename, upload_time, memo, user_id, wall_id
+			FROM images
+			WHERE album_id = $1
+			ORDER BY upload_time ASC, id ASC
+		`, albumID)
+
+		if err != nil {
+			http.Error(w, "DB query failed", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		var images []Image
+
+		for rows.Next() {
+			var img Image
+			if err := rows.Scan(
+				&img.ID,
+				&img.Filename,
+				&img.UploadTime,
+				&img.Memo,
+				&img.UserID,
+				&img.WallID,
+			); err != nil {
+				http.Error(w, "Scan failed", http.StatusInternalServerError)
+				return
+			}
+
+			url, err := r2.PresignURL(ctx, img.Filename, 10*time.Minute, w)
+			if err != nil {
+				http.Error(w, "Presign failed", http.StatusInternalServerError)
+				return
+			}
+
+			img.URL = url
+			images = append(images, img)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(images)
+	}
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using environment variables from the system")
@@ -668,6 +699,8 @@ func main() {
 	mux.Handle("/api/photo/delete/", jwtMiddleware(deletePhotoHandler(db, r2Client)))
 
 	mux.HandleFunc("/api/albums", jwtMiddleware(getAlbumsHandler(db)))
+
+	mux.Handle("/api/albums/", jwtMiddleware(getAlbumImagesHandler(db, r2Client)))
 	c := cors.Options{
 		AllowedOrigins: []string{"localhost:3000", "http://localhost:3000"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},

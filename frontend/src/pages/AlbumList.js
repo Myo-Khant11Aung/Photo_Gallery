@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import LogoutButton from "../components/LogoutButton";
 import "../styles.css";
@@ -70,7 +70,6 @@ function App() {
   return (
     <div className="album-page">
       <div className="album-toolbar">
-        {/* <UploadHandler onUploadSuccess={refreshImages} /> */}
         <LogoutButton />
       </div>
 
@@ -81,7 +80,7 @@ function App() {
         {albums.map((album) => (
           <AlbumCard
             key={album.id}
-            name={album.name}
+            name={album}
             onClick={() => navigate(`/album/${album.id}`)}
           />
         ))}

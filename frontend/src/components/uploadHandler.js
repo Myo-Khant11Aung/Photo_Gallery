@@ -45,11 +45,12 @@ function UploadHandler({ albumId, onUploadSuccess }) {
   async function uploadManyAtOnce(files) {
     const formData = new FormData();
 
+    formData.append("album_id", albumId);
+
     // Convert each file if needed
     for (const f of files) {
       const processed = await convertIfHeic(f);
       formData.append("image", processed); // backend still reads "image"
-      formData.append("album_id", albumId);
     }
 
     const res = await fetch(`${API}/api/upload`, {
